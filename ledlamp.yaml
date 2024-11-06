@@ -1,0 +1,141 @@
+substitutions:
+  device_name: "ledlamp"
+  api_url: !secret update_url
+
+esphome:
+  name: ${device_name}
+  friendly_name: karolinino_svetlo
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+wifi:
+  ssid: !secret wifi_iot
+  password: !secret wifi_pass
+  # Optional manual IP
+  manual_ip:
+    static_ip: !secret ledlight_ip
+    gateway: !secret gateway
+    subnet: 255.255.0.0
+    dns1: !secret dns1
+#    dns2: !secret dns2
+  #use_address: "5.0.0.2"
+  fast_connect: true
+  
+  ap:
+    ssid: "Led Light"
+    password: !secret fallback hotspot_password 
+# Enable fallback hotspot (captive portal) in case wifi connection fails
+captive_portal:
+
+#wireguard:
+#  address: 23.5.98.2
+#  private_key: !secret wg_privkey
+#  peer_preshared_key: !secret wg_shrdkey
+#  peer_endpoint: 10.152.15.1
+#  peer_public_key: !secret public_key
+
+  # Optional netmask (this is the default if omitted)
+#  netmask: 255.255.255.255
+
+  # Optional endpoint port (WireGuard default if omitted)
+#  peer_port: 51820
+  # Optional keepalive (disabled by default)
+#  peer_persistent_keepalive: 25s
+
+# Enable logging
+logger:
+
+ota:
+  - platform: esphome
+    password: !secret remote_pass
+  - platform: http_request
+
+http_request:
+  verify_ssl: false
+
+update:
+  - platform: http_request
+    name: Firmware Update
+    source: ${api_url}
+
+web_server:
+  port: 80
+  auth: 
+    username: !secret web_user
+    password: !secret web_pass 
+
+mqtt:
+  broker: !secret broker_ip
+  port: 1883
+  username: esphome
+  password: !secret mqtt_password
+
+  birth_message:
+    topic: esphome/ledokrugla/status
+    payload: online
+  will_message:
+    topic: esphome/ledokrugla/status
+    payload: offline
+
+
+light:
+  - platform: monochromatic
+    restore_mode: RESTORE_AND_ON
+    name: "ledlight"
+    output: "light_led"
+    id: ledlight
+
+number:
+  - platform: template
+    name: "Light Start Value"
+    id: light_start_value
+    min_value: 1
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    icon: "mdi:timer-lock-outline"
+    optimistic: true
+    initial_value: 25
+    restore_value: true
+    on_value:
+      then:
+        - light.turn_on:
+            id: ledlight
+            brightness: !lambda "return id(light_start_value).state / 100.0;"
+
+button:
+  - platform: template
+    name: "Update"
+    id: firmware_update
+    on_press:
+      then:
+        - ota.http_request.flash:
+            md5_url: https://github.com/tominik83/ledlamp/raw/refs/heads/main/firmware.md5
+            url: https://github.com/tominik83/ledlamp/raw/refs/heads/main/firmware.ota.bin
+            username: !secret web_user
+            password: !secret web_pass
+        - logger.log: "This message should not be displayed because the device reboots"
+
+  - platform: shutdown
+    name: "Ledlamp Shutdown"
+    entity_category: diagnostic
+
+  - platform: restart
+    name: "Ledlamp Restart"
+    entity_category: diagnostic
+
+  - platform: safe_mode
+    name: "Ledlamp Restart (Safe Mode)"
+    entity_category: diagnostic
+    
+
+output:
+  - id: light_led
+    platform: ledc
+    pin: 
+      number: GPIO12
+#      inverted: yes
+#    restore_mode: RESTORE_DEFAULT_ON
