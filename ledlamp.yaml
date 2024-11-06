@@ -4,7 +4,7 @@ substitutions:
 
 esphome:
   name: ${device_name}
-  friendly_name: karolinino_svetlo
+  friendly_name: karolinina_svetlo
 
 esp32:
   board: esp32dev
