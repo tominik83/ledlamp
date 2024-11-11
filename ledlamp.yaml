@@ -4,7 +4,10 @@ substitutions:
 
 esphome:
   name: ${device_name}
-  friendly_name: karolinina_svetlo
+  friendly_name: karolinino_svetlo
+  project:
+    name: bbt.ledlamp
+    version: "2024.10.3"
 
 esp32:
   board: esp32dev
@@ -48,18 +51,24 @@ captive_portal:
 # Enable logging
 logger:
 
+api:
+
 ota:
   - platform: esphome
     password: !secret remote_pass
   - platform: http_request
 
 http_request:
-  verify_ssl: false
+  #verify_ssl: false
 
 update:
   - platform: http_request
     name: Firmware Update
     source: ${api_url}
+
+dashboard_import:
+  package_import_url: !secret package_url
+  import_full_config: true # or false
 
 web_server:
   port: 80
@@ -81,6 +90,8 @@ mqtt:
     payload: offline
 
 
+
+
 light:
   - platform: monochromatic
     restore_mode: RESTORE_AND_ON
@@ -88,23 +99,18 @@ light:
     output: "light_led"
     id: ledlight
 
-number:
-  - platform: template
-    name: "Light Start Value"
-    id: light_start_value
-    min_value: 1
-    max_value: 100
-    step: 1
-    unit_of_measurement: "%"
-    icon: "mdi:timer-lock-outline"
-    optimistic: true
-    initial_value: 25
-    restore_value: true
-    on_value:
-      then:
-        - light.turn_on:
-            id: ledlight
-            brightness: !lambda "return id(light_start_value).state / 100.0;"
+# number:
+#   - platform: template
+#     name: "Light Start Value"
+#     id: light_start_value
+#     min_value: 1
+#     max_value: 100
+#     step: 1
+#     unit_of_measurement: "%"
+#     icon: "mdi:timer-lock-outline"
+#     optimistic: true
+#     initial_value: 25
+#     restore_value: true
 
 button:
   - platform: template
@@ -115,8 +121,8 @@ button:
         - ota.http_request.flash:
             md5_url: https://github.com/tominik83/ledlamp/raw/refs/heads/main/firmware.md5
             url: https://github.com/tominik83/ledlamp/raw/refs/heads/main/firmware.ota.bin
-            username: !secret web_user
-            password: !secret web_pass
+            # username: !secret web_user
+            # password: !secret web_pass
         - logger.log: "This message should not be displayed because the device reboots"
 
   - platform: shutdown
