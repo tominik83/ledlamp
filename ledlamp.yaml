@@ -1,12 +1,13 @@
 substitutions:
   device_name: "ledlamp"
   api_url: !secret update_url
+  friendly_name: "Küche Licht"
 
 esphome:
   name: ${device_name}
-  friendly_name: karolinino_svetlo
+  friendly_name: "${friendly_name}"
   project:
-    name: bbt.ledlamp
+    name: Bibliotehnika.ledlamp
     version: "2024.10.3"
 
 esp32:
@@ -28,7 +29,7 @@ wifi:
   fast_connect: true
   
   ap:
-    ssid: "Led Light"
+    ssid: "${device_name} Fallback Hotspot"
     password: !secret fallback hotspot_password 
 # Enable fallback hotspot (captive portal) in case wifi connection fails
 captive_portal:
@@ -70,23 +71,24 @@ dashboard_import:
   package_import_url: !secret package_url
   import_full_config: true # or false
 
-web_server:
-  port: 80
-  auth: 
-    username: !secret web_user
-    password: !secret web_pass 
+# web_server:
+#   port: 80
+#   auth: 
+#     username: !secret web_user
+#     password: !secret web_pass 
 
 mqtt:
   broker: !secret broker_ip
   port: 1883
   username: esphome
   password: !secret mqtt_password
+  discovery: false
 
   birth_message:
-    topic: esphome/ledokrugla/status
+    topic: esphome/${device_name}/status
     payload: online
   will_message:
-    topic: esphome/ledokrugla/status
+    topic: esphome/${device_name}/status
     payload: offline
 
 
@@ -95,7 +97,7 @@ mqtt:
 light:
   - platform: monochromatic
     restore_mode: RESTORE_AND_ON
-    name: "ledlight"
+    name: "${device_name}"
     output: "light_led"
     id: ledlight
 
@@ -126,15 +128,15 @@ button:
         - logger.log: "This message should not be displayed because the device reboots"
 
   - platform: shutdown
-    name: "Ledlamp Shutdown"
+    name: "${friendly_name} Shutdown"
     entity_category: diagnostic
 
   - platform: restart
-    name: "Ledlamp Restart"
+    name: "${friendly_name} Restart"
     entity_category: diagnostic
 
   - platform: safe_mode
-    name: "Ledlamp Restart (Safe Mode)"
+    name: "${friendly_name} (Safe Mode)"
     entity_category: diagnostic
     
 
